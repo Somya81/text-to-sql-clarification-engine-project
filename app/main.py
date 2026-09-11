@@ -1,14 +1,15 @@
 from llm import generate_sql
-from database import excute_query
+from database import execute_query
 
-question=input("Ask Your Sawal - ")
-sql=generate_sql(question)
+question = input("Ask Your Sawal - ")
 
-print("\nGenerate SQL: ")
+sql = generate_sql(question)
+
+print("\nGenerated SQL:")
 print(sql)
 
-results=excute_query(sql)
+results = execute_query(sql)
 
-print("\nResult: ")
+print("\nResult:")
 for row in results:
     print(row)
