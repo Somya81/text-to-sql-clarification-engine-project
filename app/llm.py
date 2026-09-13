@@ -40,3 +40,19 @@ Return only the SQL query.
     sql = sql.replace("```", "")
 
     return sql.strip()
+
+def check_clarification(question):
+    prompt=f"""
+You are a clarification assistant.
+Decide whether the user's question is clear enough
+to generate a SQL query.
+If the question is unclear, clarification is needed.
+If the question is clear, clarification is not needed. 
+User question:
+{question}
+"""
+    response=client.models.generate_content(
+        model="gemini-3.6-flash",
+        contents=prompt
+    )
+    return response.text
