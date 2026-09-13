@@ -1,9 +1,9 @@
 from llm import generate_sql,check_clarification
 from database import execute_query
-from clarification import needs_clarification
+
 question = input("Ask Your Sawal - ")
 clarification=check_clarification(question)
-if clarification.needs_clarification(question):
+if clarification.needs_clarification:
     print("\nCould you clarify")
     print(clarification.question)
 else:

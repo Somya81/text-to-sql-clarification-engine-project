@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 from google import genai
-
+from clarification import ClarificationResult
 load_dotenv()
 
 client = genai.Client(
@@ -11,7 +11,14 @@ client = genai.Client(
 def generate_sql(question):
     prompt = f"""
 You are a SQL assistant.
+Decide whether the user's question is specific enough
+to generate a correct SQL query.
 
+If important information is missing, clarification is needed.
+Example:
+"Show customers" -> unclear
+"Show customers from Mumbai" -> clear
+"Show all customers" -> clear
 Database:
 
 customers(
@@ -43,16 +50,16 @@ Return only the SQL query.
 
 def check_clarification(question):
     prompt=f"""
-You are a clarification assistant.
-Decide whether the user's question is clear enough
-to generate a SQL query.
-If the question is unclear, clarification is needed.
-If the question is clear, clarification is not needed. 
+Decide if user's question is clear enough to generate SQL.
 User question:
 {question}
 """
     response=client.models.generate_content(
         model="gemini-3.6-flash",
-        contents=prompt
+        contents=prompt,
+        config={
+            "response_mime_type":"application/json",
+            "response_schema":ClarificationResult,
+        },
     )
-    return response.text
+    return ClarificationResult.model_validate_json(response.text)
