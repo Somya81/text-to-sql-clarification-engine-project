@@ -12,8 +12,9 @@ else:
     print("\nGenerated SQL:")
     print(sql)
 
-    results = execute_query(sql)
+    columns,results = execute_query(sql)
 
     print("\nResult:")
+    print(" | ".join(columns))
     for row in results:
-        print(row)
+        print(" | ".join(str(value) for value in row))
