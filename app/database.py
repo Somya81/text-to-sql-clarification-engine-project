@@ -28,7 +28,7 @@ def execute_query(sql):
     cursor.execute(sql)
 
     results = cursor.fetchall()
-    columns=[columns[0] for column in cursor.description]
+    columns=[column[0] for column in cursor.description]
 
     cursor.close()
     connection.close()
