@@ -27,9 +27,28 @@ customers(
     city,
     email
 )
-
-Convert the user's question into a MySQL SELECT query.
-
+products(
+    product_id,
+    product_name,
+    category,
+    price
+)
+orders(
+    order_id,
+    customer_id,
+    product_id,
+    quantity,
+    order_date
+)
+Relationships:
+orders.customer_id=customers.customer_id
+orders.product_id=products.product_id
+Rules:
+- Generate only SELECT queries.
+- You can use JOIN, GROUP BY, HAVING, ORDER BY, COUNT, SUM, AVG and LIMIT.
+- Do not generate INSERT, UPDATE, DELETE, DROP, ALTER, TRUNCATE or CREATE.
+- Use the correct table and column names.
+- Return only the SQL query.
 User question:
 
 {question}
