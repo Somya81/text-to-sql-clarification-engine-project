@@ -10,15 +10,16 @@ client = genai.Client(
 )
 
 
-def generate_sql(question):
-    prompt = f"""
-You are a SQL assistant.
-
-Convert the user's natural language question
-into one correct MySQL SELECT query.
-
-Database:
-
+def generate_sql(question,schema=None):
+    if schema:
+        schema_text=", ".join(schema)
+        database_info=f"""
+Table: uploaded_data
+Columns:
+{schema_text}
+"""
+    else:
+        database_info="""
 customers(
     customer_id,
     name,
@@ -45,6 +46,17 @@ Relationships:
 
 orders.customer_id = customers.customer_id
 orders.product_id = products.product_id
+
+"""
+    prompt = f"""
+You are a SQL assistant.
+
+Convert the user's natural language question
+into one correct MySQL SELECT query.
+
+Database:
+
+{database_info}
 
 Rules:
 
@@ -74,41 +86,51 @@ Return only the SQL query.
     return sql.strip()
 
 
-def check_clarification(question):
+def check_clarification(question,schema=None):
+    if schema:
+        schema_text=", ".join(schema)
+        database_info=f"""
+Table:uploaded_data
+Columns:
+{schema_text}
+"""
+    else:
+        database_info="""
+        customers(
+        customer_id,
+        name,
+        city,
+        email
+    )
+
+    products(
+        product_id,
+        product_name,
+        category,
+        price
+    )
+
+    orders(
+        order_id,
+        customer_id,
+        product_id,
+        quantity,
+        order_date
+    )
+
+    Relationships:
+
+    orders.customer_id = customers.customer_id
+    orders.product_id = products.product_id
+    """
     prompt = f"""
 You are a clarification assistant for a Text-to-SQL system.
 
 Your job is to decide whether the user's question contains
 enough information to generate ONE correct SQL query.
 
-Database:
 
-customers(
-    customer_id,
-    name,
-    city,
-    email
-)
 
-products(
-    product_id,
-    product_name,
-    category,
-    price
-)
-
-orders(
-    order_id,
-    customer_id,
-    product_id,
-    quantity,
-    order_date
-)
-
-Relationships:
-
-orders.customer_id = customers.customer_id
-orders.product_id = products.product_id
 
 Ask for clarification ONLY when an important detail is missing.
 
