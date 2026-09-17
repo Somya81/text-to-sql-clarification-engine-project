@@ -207,6 +207,10 @@ are rejected.
 ### Data Processing
 
 - Pandas
+  
+### Prompt Engineering 
+
+- Custom prompts for SQL generation and clarification detection
 
 ### Validation
 
