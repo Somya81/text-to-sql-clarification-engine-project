@@ -59,6 +59,10 @@ The home screen provides two options:
 
 ### 🗄️ Try Demo Database
 
+<p align="center">
+  <img src="image/demo.png" width="850">
+</p>
+
 Explore the built-in sample database without uploading any files.
 
 ### 📁 Upload Your Data
@@ -70,7 +74,7 @@ Upload a CSV file and ask questions about your own dataset.
 ## 📁 Upload Your Own Dataset
 
 <p align="center">
-  <img src="screenshots/upload.png" width="850">
+  <img src="image/database.png" width="850">
 </p>
 
 The application:
