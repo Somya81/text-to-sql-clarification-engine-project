@@ -52,7 +52,7 @@ The application supports two modes:
 ### 🏠 Home Screen
 
 <p align="center">
-  <img src="screenshots/home.png" width="850">
+  <img src="image/home.png" width="850">
 </p>
 
 The home screen provides two options:
