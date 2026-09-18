@@ -16,24 +16,28 @@ def execute_query(sql):
         raise ValueError(
             "Only SELECT and WITH... SELECT queries are allowed."
         )
-
+    forbidden = ["INTO OUTFILE", "INTO DUMPFILE", "LOAD_FILE"]
+    if any(keyword in upper_sql for keyword in forbidden):
+        raise ValueError(
+            "Query contains a forbidden file operation."
+        )
     connection = mysql.connector.connect(
         host=os.getenv("DB_HOST"),
         user=os.getenv("DB_USER"),
         password=os.getenv("DB_PASSWORD"),
         database=os.getenv("DB_NAME")
     )
+    try:
+        cursor = connection.cursor()
+        cursor.execute(sql)
 
-    cursor = connection.cursor()
-    cursor.execute(sql)
+        results = cursor.fetchmany(1000)
+        columns=[column[0] for column in cursor.description]
 
-    results = cursor.fetchall()
-    columns=[column[0] for column in cursor.description]
-
-    cursor.close()
-    connection.close()
-
-    return columns,results
+        return columns,results
+    finally:
+        cursor.close()
+        connection.close()
 
 def load_csv_to_mysql(df,table_name="uploaded_data"):
     connection=mysql.connector.connect(

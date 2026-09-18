@@ -72,11 +72,14 @@ User question:
 
 Return only the SQL query.
 """
-
-    response = client.models.generate_content(
-        model="gemini-3.6-flash",
-        contents=prompt
-    )
+    try:
+        response = client.models.generate_content(
+            model="gemini-3.6-flash",
+            contents=prompt
+        )
+    except Exception as e:
+        raise RuntimeError(f"failed to generate SQL from Gemini : {e}")
+    
 
     sql = response.text.strip()
 
@@ -177,14 +180,17 @@ User question:
 
 {question}
 """
-
-    response = client.models.generate_content(
-        model="gemini-3.6-flash",
-        contents=prompt,
-        config={
-            "response_mime_type": "application/json",
-            "response_schema": ClarificationResult,
-        },
-    )
+    try:
+        response = client.models.generate_content(
+            model="gemini-3.6-flash",
+            contents=prompt,
+            config={
+                "response_mime_type": "application/json",
+                "response_schema": ClarificationResult,
+            },
+        )
+    except Exception as e:
+        raise RuntimeError(f"Failed to check clarification from Gemini: {e}")
+    
 
     return ClarificationResult.model_validate_json(response.text)
