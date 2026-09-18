@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  An AI-powered Text-to-SQL application that converts natural language questions into SQL queries and executes them on a MySQL database.
+  An AI-powered Text-to-SQL application that converts natural language questions into SQL queries, validates them for safety, and executes them on a MySQL database.
 </p>
 
 <p align="center">
@@ -23,7 +23,7 @@
 
 **Intelligent Text-to-SQL Assistant** allows users to interact with databases using natural language instead of manually writing SQL queries.
 
-The application uses **Google Gemini** to understand the user's question, generate an appropriate SQL query, execute it on **MySQL**, and display the results through an interactive **Streamlit** interface.
+The application uses **Google Gemini** to understand the user's question, checks whether the question is clear enough to answer, generates an appropriate SQL query, validates that query for safety, executes it on **MySQL**, and displays the results through an interactive **Streamlit** interface.
 
 The application supports two modes:
 
@@ -40,8 +40,10 @@ The application supports two modes:
 | 🗄️ Demo Database | Query sample customers, products and orders |
 | 📁 CSV Upload | Upload your own dataset |
 | 🔍 Schema Detection | Automatically detects uploaded table columns |
-| 💬 Clarification | Handles ambiguous questions before generating SQL |
-| 🔐 SQL Validation | Allows only read-only SQL queries |
+| 💬 Interactive Clarification | Detects ambiguous questions, asks a follow-up, and merges the answer back into the original question before generating SQL |
+| 🔐 Hardened SQL Validation | Allows only `SELECT` / `WITH ... SELECT` queries; explicitly blocks file-read/write operations (`INTO OUTFILE`, `INTO DUMPFILE`, `LOAD_FILE`) |
+| 🧯 Row Limiting | Query results are capped (`fetchmany`) so a runaway query can't pull unbounded data into memory |
+| 🧵 Graceful Error Handling | LLM and database failures are caught and shown as readable messages instead of raw crashes |
 | 📊 Query Results | Displays results in an interactive table |
 | 🎨 Streamlit UI | Clean and interactive web interface |
 
@@ -103,7 +105,7 @@ FROM uploaded_data
 WHERE country = 'France';
 ```
 
-The generated query is then executed on MySQL and the result is displayed in the application.
+The generated query is validated, then executed on MySQL, and the result is displayed in the application.
 
 ---
 
@@ -127,7 +129,7 @@ Do you want to see all customers
 or customers from a specific city?
 ```
 
-The user's clarification is then combined with the original question before generating the final SQL query.
+The user's clarification is combined with the original question (e.g. `"Show customers" + " " + "just the ones from Mumbai"`), and it is this **combined** question that is actually sent to SQL generation — so the clarification loop changes the final query, not just the message shown to the user.
 
 ---
 
@@ -149,9 +151,24 @@ INSERT
 UPDATE
 DELETE
 DROP
+ALTER
+TRUNCATE
+CREATE
 ```
 
 are rejected.
+
+In addition, the following are explicitly blocked even though they technically start with `SELECT` — this is the part a simple "does it start with SELECT" check would otherwise miss:
+
+```text
+SELECT ... INTO OUTFILE '...'
+SELECT ... INTO DUMPFILE '...'
+SELECT LOAD_FILE('...')
+```
+
+These are blocked because they can be used to write to or read arbitrary files on the database server.
+
+Query results are also pulled with `fetchmany(1000)` instead of `fetchall()`, so an unbounded query can't load unlimited rows into memory.
 
 ---
 
@@ -166,19 +183,24 @@ are rejected.
         └──────────┬──────────┘
                    │
                    ▼
+     Merge clarification answer (if any)
+           into the original question
+                   │
+                   ▼
           Google Gemini API
                    │
                    ▼
           SQL Query Generation
                    │
                    ▼
-          SQL Safety Validation
+      SQL Safety Validation
+   (allow-list + forbidden-operation block)
                    │
                    ▼
              MySQL Database
                    │
                    ▼
-            Query Execution
+      Query Execution (row-capped)
                    │
                    ▼
              Query Results
@@ -211,8 +233,8 @@ are rejected.
 ### Data Processing
 
 - Pandas
-  
-### Prompt Engineering 
+
+### Prompt Engineering
 
 - Custom prompts for SQL generation and clarification detection
 
@@ -237,6 +259,7 @@ text-to-sql-clarification-engine/
 │   ├── database.py
 │   └── clarification.py
 │
+├── image/
 ├── .env
 ├── .gitignore
 ├── requirements.txt
@@ -363,16 +386,25 @@ What is the average balance?
 
 ---
 
+## ⚠️ Known Limitations
+
+- **Uploaded CSV columns are all stored as `TEXT`** in MySQL. This works for equality/filter queries, but numeric sorting (e.g. `ORDER BY balance`) sorts lexicographically rather than numerically. Type inference from the pandas dtype is a planned improvement.
+- **CSV column names are not sanitized** before being used in `CREATE TABLE` / `INSERT` statements. Since the table name is currently hardcoded (`uploaded_data`), this is low risk today, but validating column names against an allow-listed pattern is planned.
+- **No connection pooling** — each query opens and closes its own MySQL connection. Fine for a demo; would need pooling for real concurrent traffic.
+- **SQL validation is keyword/allow-list based, not a full SQL parser.** It has been hardened against the most relevant MySQL file-read/write exploits (`INTO OUTFILE`, `INTO DUMPFILE`, `LOAD_FILE`), but a dedicated parser (e.g. `sqlparse` or `sqlglot`) would give stronger guarantees than string matching.
+
+---
+
 ## 🚀 Future Improvements
 
 - 📈 Automatic data visualizations
 - 🕘 Query history
-- 🧠 Improved schema understanding
+- 🧠 Type-aware schema handling for uploaded CSVs
 - 🗃️ Support for additional databases
 - ⚡ Better SQL error handling
 - 📊 Automatic chart generation
-- 🔎 More advanced query clarification
-- 🔐 More robust SQL validation
+- 🔎 Parser-based SQL validation instead of keyword matching
+- 🔐 Connection pooling for concurrent usage
 
 ---
 
@@ -384,12 +416,14 @@ This project demonstrates practical implementation of:
 - Generative AI
 - LLM-based SQL generation
 - Prompt engineering
+- Structured LLM outputs with Pydantic (`response_schema`)
+- Multi-turn clarification: detecting ambiguity, asking a follow-up, and merging the answer back into the original request
+- Defense-in-depth SQL validation (allow-listing query types *and* blocking known exploit patterns)
+- Graceful error handling around external API calls and database operations
 - Database connectivity
-- SQL validation
 - Schema handling
 - CSV-to-MySQL data loading
 - Streamlit application development
-- Pydantic structured outputs
 
 ---
 
